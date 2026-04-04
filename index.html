@@ -2804,185 +2804,140 @@ function updateHomeStats(){
 </script>
 </body>
 </html>
-import React, { useState, useEffect, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-
-// ------------------ 📚 MULTILINGUAL DATA ------------------
-const wordBank = [
-  { eng: "Apple", thai: "แอปเปิ้ล", rumi: "Epal", jawi: "ايفل", emoji: "🍎" },
-  { eng: "Cat", thai: "แมว", rumi: "Kucing", jawi: "کوچيڠ", emoji: "🐱" },
-  { eng: "Book", thai: "หนังสือ", rumi: "Buku", jawi: "بوکو", emoji: "📚" },
-  { eng: "Water", thai: "น้ำ", rumi: "Air", jawi: "اءير", emoji: "💧" },
-];
-
-const shuffle = (arr) => [...arr].sort(() => Math.random() - 0.5);
-
-export default function TriLingQuiz() {
-  const [questions, setQuestions] = useState([]);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [score, setScore] = useState(0);
-  const [timeLeft, setTimeLeft] = useState(30);
-  const [gameState, setGameState] = useState("start"); // start, playing, result
-  const [selectedAnswer, setSelectedAnswer] = useState(null);
-
-  // 🔄 GENERATE SMART QUIZ
-  const generateQuiz = useCallback(() => {
-    const shuffledWords = shuffle(wordBank);
-    const newQuestions = shuffledWords.map((word) => {
-      const type = Math.floor(Math.random() * 3); // 0: Eng->Thai, 1: Jawi->Eng, 2: Thai->Rumi
-      let qText, correctAns, options = [];
-
-      if (type === 0) { qText = word.eng; correctAns = word.thai; }
-      else if (type === 1) { qText = word.jawi; correctAns = word.eng; }
-      else { qText = word.thai; correctAns = word.rumi; }
-
-      // สร้างตัวหลอก 3 ตัว
-      const distractors = shuffle(wordBank)
-        .filter(w => w.eng !== word.eng)
-        .slice(0, 3)
-        .map(w => (type === 0 ? w.thai : type === 1 ? w.eng : w.rumi));
-
-      return {
-        question: qText,
-        answer: correctAns,
-        options: shuffle([...distractors, correctAns]),
-        emoji: word.emoji,
-        type: type === 1 ? "jawi" : "normal"
-      };
-    });
-    setQuestions(newQuestions);
-  }, []);
-
-  // ⏱ TIMER LOGIC
-  useEffect(() => {
-    if (gameState === "playing" && timeLeft > 0) {
-      const timer = setInterval(() => setTimeLeft(prev => prev - 1), 1000);
-      return () => clearInterval(timer);
-    } else if (timeLeft === 0) {
-      setGameState("result");
-    }
-  }, [timeLeft, gameState]);
-
-  const handleStart = () => {
-    generateQuiz();
-    setScore(0);
-    setCurrentIndex(0);
-    setTimeLeft(30);
-    setGameState("playing");
-  };
-
-  const handleAnswer = (option) => {
-    if (selectedAnswer) return; // ป้องกันการกดซ้ำ
-    setSelectedAnswer(option);
-    
-    const isCorrect = option === questions[currentIndex].answer;
-    if (isCorrect) setScore(s => s + 10);
-
-    // หน่วงเวลาให้เห็นสีคำตอบก่อนเปลี่ยนข้อ
-    setTimeout(() => {
-      if (currentIndex < questions.length - 1) {
-        setCurrentIndex(prev => prev + 1);
-        setSelectedAnswer(null);
-      } else {
-        setGameState("result");
-      }
-    }, 800);
-  };
-
-  return (
-    <div style={containerStyle}>
-      <AnimatePresence mode="wait">
-        
-        {/* --- START SCREEN --- */}
-        {gameState === "start" && (
-          <motion.div key="start" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ scale: 0.8, opacity: 0 }}>
-            <h1 style={{ fontSize: "3rem" }}>🌙 TriLing</h1>
-            <p>ฝึกภาษาผ่าน 3 วัฒนธรรมชายแดนใต้</p>
-            <button onClick={handleStart} style={mainBtnStyle}>เริ่มบทเรียน</button>
-          </motion.div>
-        )}
-
-        {/* --- PLAYING SCREEN --- */}
-        {gameState === "playing" && questions.length > 0 && (
-          <motion.div key="quiz" initial={{ x: 50, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: -50, opacity: 0 }}>
-            <div style={timerStyle}>⏱ {timeLeft}s | Score: {score}</div>
-            
-            <motion.div 
-              key={currentIndex}
-              initial={{ y: 20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              style={cardStyle}
-            >
-              <div style={{ fontSize: "4rem" }}>{questions[currentIndex].emoji}</div>
-              <h2 style={{ 
-                fontFamily: questions[currentIndex].type === "jawi" ? "Noto Naskh Arabic" : "inherit",
-                fontSize: "2.5rem" 
-              }}>
-                {questions[currentIndex].question}
-              </h2>
-            </motion.div>
-
-            <div style={optionsGrid}>
-              {questions[currentIndex].options.map((opt, i) => (
-                <motion.button
-                  key={i}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => handleAnswer(opt)}
-                  style={{
-                    ...optionBtnStyle,
-                    backgroundColor: selectedAnswer === opt 
-                      ? (opt === questions[currentIndex].answer ? "#22C55E" : "#EF4444")
-                      : "#1E293B"
-                  }}
-                >
-                  {opt}
-                </motion.button>
-              ))}
-            </div>
-          </motion.div>
-        )}
-
-        {/* --- RESULT SCREEN --- */}
-        {gameState === "result" && (
-          <motion.div key="res" initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}>
-            <h2>สรุปคะแนน</h2>
-            <h1 style={{ fontSize: "4rem", color: "#F5A623" }}>{score}</h1>
-            <button onClick={handleStart} style={mainBtnStyle}>เล่นอีกครั้ง</button>
-            <button onClick={() => setGameState("start")} style={{...mainBtnStyle, background: "none", border: "1px solid #ccc"}}>กลับหน้าหลัก</button>
-          </motion.div>
-        )}
-
-      </AnimatePresence>
-    </div>
-  );
+/* แอนิเมชันสำหรับคำถามเด้งขึ้นมา */
+@keyframes pop-up {
+    0% { transform: scale(0.8); opacity: 0; }
+    70% { transform: scale(1.1); }
+    100% { transform: scale(1); opacity: 1; }
 }
 
-// ------------------ 🎨 STYLES ------------------
-const containerStyle = {
-  maxWidth: "400px", margin: "0 auto", padding: "40px 20px",
-  textAlign: "center", background: "#0F172A", color: "white",
-  minHeight: "100vh", fontFamily: "Nunito, sans-serif"
+/* แอนิเมชันสั่นเมื่อตอบผิด */
+@keyframes shake-error {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-8px) rotate(-1deg); }
+    75% { transform: translateX(8px) rotate(1deg); }
+}
+
+/* แอนิเมชันเรืองแสงเมื่อตอบถูก */
+@keyframes success-glow {
+    0% { box-shadow: 0 0 0 0px rgba(34, 197, 94, 0.4); }
+    100% { box-shadow: 0 0 0 20px rgba(34, 197, 94, 0); }
+}
+
+.animate-pop { animation: pop-up 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); }
+.shake { animation: shake-error 0.4s ease-in-out; }
+.correct-glow { animation: success-glow 0.8s ease-out; }
+
+/* ปรับปุ่มให้ดูลอยๆ ลื่นๆ */
+.quiz-option {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    transform: translateZ(0); /* Force GPU acceleration */
+    will-change: transform, background-color;
+}
+.quiz-option:active { transform: scale(0.95); }
+// --- ⚙️ CONFIG & DATA ---
+const wordBank = [
+    { eng: "Apple", thai: "แอปเปิ้ล", rumi: "Epal", jawi: "ايفل", emoji: "🍎" },
+    { eng: "Cat", thai: "แมว", rumi: "Kucing", jawi: "کوچيڠ", emoji: "🐱" },
+    { eng: "School", thai: "โรงเรียน", rumi: "Sekolah", jawi: "سکوله", emoji: "🏫" },
+    { eng: "Water", thai: "น้ำ", rumi: "Air", jawi: "اءير", emoji: "💧" }
+];
+
+let appState = {
+    questions: [],
+    currentIndex: 0,
+    score: 0,
+    isProcessing: false // ป้องกันการรัวปุ่มจนแอปพัง
 };
 
-const cardStyle = {
-  background: "linear-gradient(135deg, #1E293B, #334155)",
-  padding: "30px", borderRadius: "20px", marginBottom: "20px",
-  border: "1px solid rgba(255,255,255,0.1)"
-};
+// --- 🌪️ SHUFFLE ENGINE ---
+function shuffle(array) {
+    return array.sort(() => Math.random() - 0.5);
+}
 
-const optionsGrid = { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" };
+// --- 🎯 QUIZ LOGIC ---
+function startQuiz() {
+    appState.score = 0;
+    appState.currentIndex = 0;
+    // สุ่มคำศัพท์จากคลัง
+    appState.questions = shuffle([...wordBank]);
+    renderQuestion();
+}
 
-const optionBtnStyle = {
-  padding: "15px", borderRadius: "12px", border: "none",
-  color: "white", fontSize: "1rem", fontWeight: "bold", cursor: "pointer",
-  transition: "background 0.3s"
-};
+function renderQuestion() {
+    const container = document.getElementById('quiz-content'); // ID ตามโครงเดิมของน้อง
+    const optionsGrid = document.getElementById('quiz-options');
+    const currentWord = appState.questions[appState.currentIndex];
 
-const mainBtnStyle = {
-  padding: "15px 40px", borderRadius: "50px", border: "none",
-  background: "#F5A623", color: "black", fontWeight: "900",
-  fontSize: "1.2rem", cursor: "pointer", marginTop: "20px"
-};
+    // 🎲 RANDOMIZE QUESTION TYPE (สลับรูปแบบทุกข้อ!)
+    const type = Math.floor(Math.random() * 3); 
+    let qText, correctAns, langLabel;
 
-const timerStyle = { marginBottom: "20px", fontWeight: "bold", color: "#94A3B8" };
+    if(type === 0) { qText = currentWord.eng; correctAns = currentWord.thai; langLabel = "English ➡️ Thai"; }
+    else if(type === 1) { qText = currentWord.jawi; correctAns = currentWord.eng; langLabel = "Jawi ➡️ English"; }
+    else { qText = currentWord.thai; correctAns = currentWord.rumi; langLabel = "Thai ➡️ Rumi"; }
+
+    // เคลียร์ค่าเก่าและใส่แอนิเมชัน
+    container.innerHTML = `
+        <div class="animate-pop">
+            <div style="font-size: 3rem;">${currentWord.emoji}</div>
+            <p style="color: #94A3B8; font-size: 0.8rem;">${langLabel}</p>
+            <h2 style="font-size: 2.5rem; margin: 10px 0;">${qText}</h2>
+        </div>
+    `;
+
+    // สร้างตัวเลือก (สุ่มตัวหลอกไม่ให้ซ้ำกับคำตอบจริง)
+    let options = [correctAns];
+    while(options.length < 4) {
+        let randomWord = wordBank[Math.floor(Math.random() * wordBank.length)];
+        let wrongAns = (type === 0) ? randomWord.thai : (type === 1 ? randomWord.eng : randomWord.rumi);
+        if(!options.includes(wrongAns)) options.push(wrongAns);
+    }
+    options = shuffle(options);
+
+    optionsGrid.innerHTML = '';
+    options.forEach(opt => {
+        const btn = document.createElement('button');
+        btn.className = 'quiz-option';
+        btn.innerText = opt;
+        btn.onclick = () => checkAnswer(opt, correctAns, btn);
+        optionsGrid.appendChild(btn);
+    });
+}
+
+function checkAnswer(selected, correct, btn) {
+    if(appState.isProcessing) return; // ล็อกปุ่มชั่วคราว
+    appState.isProcessing = true;
+
+    if(selected === correct) {
+        btn.classList.add('correct', 'correct-glow');
+        appState.score += 10;
+        playFeedback('correct'); // ถ้ามีไฟล์เสียง
+    } else {
+        btn.classList.add('wrong', 'shake');
+        playFeedback('wrong');
+    }
+
+    // หน่วงเวลาเล็กน้อยเพื่อให้ดูผลลัพธ์ ก่อนสไลด์ไปข้อถัดไป
+    setTimeout(() => {
+        appState.currentIndex++;
+        appState.isProcessing = false;
+        
+        if(appState.currentIndex < appState.questions.length) {
+            renderQuestion();
+        } else {
+            showSummary();
+        }
+    }, 1000);
+}
+
+// ระบบจัดการหน้าจอ (เสถียรและเร็ว)
+function showScreen(screenId) {
+    document.querySelectorAll('.screen').forEach(s => {
+        s.style.display = 'none';
+        s.classList.remove('active');
+    });
+    const target = document.getElementById(screenId);
+    target.style.display = 'block';
+    setTimeout(() => target.classList.add('active'), 10);
+}
