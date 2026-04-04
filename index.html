@@ -2804,3 +2804,185 @@ function updateHomeStats(){
 </script>
 </body>
 </html>
+import React, { useState, useEffect, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+
+// ------------------ 📚 MULTILINGUAL DATA ------------------
+const wordBank = [
+  { eng: "Apple", thai: "แอปเปิ้ล", rumi: "Epal", jawi: "ايفل", emoji: "🍎" },
+  { eng: "Cat", thai: "แมว", rumi: "Kucing", jawi: "کوچيڠ", emoji: "🐱" },
+  { eng: "Book", thai: "หนังสือ", rumi: "Buku", jawi: "بوکو", emoji: "📚" },
+  { eng: "Water", thai: "น้ำ", rumi: "Air", jawi: "اءير", emoji: "💧" },
+];
+
+const shuffle = (arr) => [...arr].sort(() => Math.random() - 0.5);
+
+export default function TriLingQuiz() {
+  const [questions, setQuestions] = useState([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [score, setScore] = useState(0);
+  const [timeLeft, setTimeLeft] = useState(30);
+  const [gameState, setGameState] = useState("start"); // start, playing, result
+  const [selectedAnswer, setSelectedAnswer] = useState(null);
+
+  // 🔄 GENERATE SMART QUIZ
+  const generateQuiz = useCallback(() => {
+    const shuffledWords = shuffle(wordBank);
+    const newQuestions = shuffledWords.map((word) => {
+      const type = Math.floor(Math.random() * 3); // 0: Eng->Thai, 1: Jawi->Eng, 2: Thai->Rumi
+      let qText, correctAns, options = [];
+
+      if (type === 0) { qText = word.eng; correctAns = word.thai; }
+      else if (type === 1) { qText = word.jawi; correctAns = word.eng; }
+      else { qText = word.thai; correctAns = word.rumi; }
+
+      // สร้างตัวหลอก 3 ตัว
+      const distractors = shuffle(wordBank)
+        .filter(w => w.eng !== word.eng)
+        .slice(0, 3)
+        .map(w => (type === 0 ? w.thai : type === 1 ? w.eng : w.rumi));
+
+      return {
+        question: qText,
+        answer: correctAns,
+        options: shuffle([...distractors, correctAns]),
+        emoji: word.emoji,
+        type: type === 1 ? "jawi" : "normal"
+      };
+    });
+    setQuestions(newQuestions);
+  }, []);
+
+  // ⏱ TIMER LOGIC
+  useEffect(() => {
+    if (gameState === "playing" && timeLeft > 0) {
+      const timer = setInterval(() => setTimeLeft(prev => prev - 1), 1000);
+      return () => clearInterval(timer);
+    } else if (timeLeft === 0) {
+      setGameState("result");
+    }
+  }, [timeLeft, gameState]);
+
+  const handleStart = () => {
+    generateQuiz();
+    setScore(0);
+    setCurrentIndex(0);
+    setTimeLeft(30);
+    setGameState("playing");
+  };
+
+  const handleAnswer = (option) => {
+    if (selectedAnswer) return; // ป้องกันการกดซ้ำ
+    setSelectedAnswer(option);
+    
+    const isCorrect = option === questions[currentIndex].answer;
+    if (isCorrect) setScore(s => s + 10);
+
+    // หน่วงเวลาให้เห็นสีคำตอบก่อนเปลี่ยนข้อ
+    setTimeout(() => {
+      if (currentIndex < questions.length - 1) {
+        setCurrentIndex(prev => prev + 1);
+        setSelectedAnswer(null);
+      } else {
+        setGameState("result");
+      }
+    }, 800);
+  };
+
+  return (
+    <div style={containerStyle}>
+      <AnimatePresence mode="wait">
+        
+        {/* --- START SCREEN --- */}
+        {gameState === "start" && (
+          <motion.div key="start" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ scale: 0.8, opacity: 0 }}>
+            <h1 style={{ fontSize: "3rem" }}>🌙 TriLing</h1>
+            <p>ฝึกภาษาผ่าน 3 วัฒนธรรมชายแดนใต้</p>
+            <button onClick={handleStart} style={mainBtnStyle}>เริ่มบทเรียน</button>
+          </motion.div>
+        )}
+
+        {/* --- PLAYING SCREEN --- */}
+        {gameState === "playing" && questions.length > 0 && (
+          <motion.div key="quiz" initial={{ x: 50, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: -50, opacity: 0 }}>
+            <div style={timerStyle}>⏱ {timeLeft}s | Score: {score}</div>
+            
+            <motion.div 
+              key={currentIndex}
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              style={cardStyle}
+            >
+              <div style={{ fontSize: "4rem" }}>{questions[currentIndex].emoji}</div>
+              <h2 style={{ 
+                fontFamily: questions[currentIndex].type === "jawi" ? "Noto Naskh Arabic" : "inherit",
+                fontSize: "2.5rem" 
+              }}>
+                {questions[currentIndex].question}
+              </h2>
+            </motion.div>
+
+            <div style={optionsGrid}>
+              {questions[currentIndex].options.map((opt, i) => (
+                <motion.button
+                  key={i}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => handleAnswer(opt)}
+                  style={{
+                    ...optionBtnStyle,
+                    backgroundColor: selectedAnswer === opt 
+                      ? (opt === questions[currentIndex].answer ? "#22C55E" : "#EF4444")
+                      : "#1E293B"
+                  }}
+                >
+                  {opt}
+                </motion.button>
+              ))}
+            </div>
+          </motion.div>
+        )}
+
+        {/* --- RESULT SCREEN --- */}
+        {gameState === "result" && (
+          <motion.div key="res" initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}>
+            <h2>สรุปคะแนน</h2>
+            <h1 style={{ fontSize: "4rem", color: "#F5A623" }}>{score}</h1>
+            <button onClick={handleStart} style={mainBtnStyle}>เล่นอีกครั้ง</button>
+            <button onClick={() => setGameState("start")} style={{...mainBtnStyle, background: "none", border: "1px solid #ccc"}}>กลับหน้าหลัก</button>
+          </motion.div>
+        )}
+
+      </AnimatePresence>
+    </div>
+  );
+}
+
+// ------------------ 🎨 STYLES ------------------
+const containerStyle = {
+  maxWidth: "400px", margin: "0 auto", padding: "40px 20px",
+  textAlign: "center", background: "#0F172A", color: "white",
+  minHeight: "100vh", fontFamily: "Nunito, sans-serif"
+};
+
+const cardStyle = {
+  background: "linear-gradient(135deg, #1E293B, #334155)",
+  padding: "30px", borderRadius: "20px", marginBottom: "20px",
+  border: "1px solid rgba(255,255,255,0.1)"
+};
+
+const optionsGrid = { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" };
+
+const optionBtnStyle = {
+  padding: "15px", borderRadius: "12px", border: "none",
+  color: "white", fontSize: "1rem", fontWeight: "bold", cursor: "pointer",
+  transition: "background 0.3s"
+};
+
+const mainBtnStyle = {
+  padding: "15px 40px", borderRadius: "50px", border: "none",
+  background: "#F5A623", color: "black", fontWeight: "900",
+  fontSize: "1.2rem", cursor: "pointer", marginTop: "20px"
+};
+
+const timerStyle = { marginBottom: "20px", fontWeight: "bold", color: "#94A3B8" };
