@@ -2804,3 +2804,50 @@ function updateHomeStats(){
 </script>
 </body>
 </html>
+// ฟังก์ชันสร้าง Animation แบบลื่นๆ
+const triggerTransition = (element, effectClass) => {
+    element.classList.add(effectClass);
+    element.addEventListener('animationend', () => {
+        element.classList.remove(effectClass);
+    }, { once: true });
+};
+
+// ระบบเปลี่ยนรูปแบบการทดสอบ (Dynamic Test Format)
+function startNewTest() {
+    const format = getRandomFormat();
+    const container = document.getElementById('game-container');
+    
+    // ใส่ Animation ตอนเปลี่ยนโหมด
+    triggerTransition(container, 'fade-in-slide');
+
+    if (format === 'MCQ') {
+        renderMultipleChoice();
+    } else if (format === 'MATCHING') {
+        renderMatchingGame();
+    } else {
+        renderFlashcards();
+    }
+}          
+const vocabularyData = {
+    IELTS: [
+        { word: "Abandon", definition: "To leave behind", level: "Academic" },
+        { word: "Adverse", definition: "Unfavorable; harmful", level: "Academic" },
+        // ... เจ๊เตรียมที่ว่างไว้ให้เติมจนครบ 200 คำในแต่ละหมวดนะจ๊ะ
+    ],
+    TOEIC: [
+        { word: "Agenda", definition: "A list of items to be discussed", level: "Business" },
+        { word: "Invoice", definition: "A bill for goods or services", level: "Business" },
+    ],
+    TOEFL: [
+        { word: "Hypothesis", definition: "A proposed explanation", level: "Scientific" },
+    ],
+    CEFR: [
+        { word: "Fluent", definition: "Able to express oneself easily", level: "B2/C1" },
+    ]
+};
+
+// ฟังก์ชันสุ่มรูปแบบคำถาม (Matching, Multiple Choice, Flashcard)
+const getRandomFormat = () => {
+    const formats = ['MCQ', 'MATCHING', 'FLASHCARD'];
+    return formats[Math.floor(Math.random() * formats.length)];
+};
