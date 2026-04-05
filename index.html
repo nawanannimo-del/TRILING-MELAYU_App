@@ -2804,3 +2804,245 @@ function updateHomeStats(){
 </script>
 </body>
 </html>
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TriLing v2 — Academic English Mastery</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Noto+Naskh+Arabic:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --gold:#F5A623;--gold-light:#FFD580;--teal:#0EA5A0;--teal-light:#5ECFC9;
+  --purple:#7C3AED;--purple-light:#A78BFA;--green:#22C55E;--green-light:#86EFAC;
+  --red:#EF4444;--pink:#EC4899;--sky:#0EA5E9;--orange:#F97316;
+  --bg:#0F172A;--bg2:#1E293B;--bg3:#334155;--text:#F1F5F9;--text2:#94A3B8;
+  --radius:18px;--radius-sm:10px;--shadow:0 8px 32px rgba(0,0,0,0.4);
+}
+*{margin:0;padding:0;box-sizing:border-box;outline:none;-webkit-tap-highlight-color:transparent;}
+body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;user-select:none;}
+
+/* Background Stars */
+.bg-stars{position:fixed;inset:0;pointer-events:none;z-index:0;}
+.star{position:absolute;border-radius:50%;background:white;animation:twinkle var(--d,3s) ease-in-out infinite;opacity:0.3;}
+@keyframes twinkle{0%,100%{opacity:.2;transform:scale(1)}50%{opacity:1;transform:scale(1.5)}}
+
+#app{position:relative;z-index:1;max-width:480px;margin:0 auto;min-height:100vh;padding-bottom:100px;}
+.screen{display:none;padding:20px;animation:fadeIn 0.4s cubic-bezier(.34,1.56,.64,1);}
+.screen.active{display:block;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
+
+/* Header Styles */
+.home-header{background:linear-gradient(135deg,#1e3a5f 0%,#0F172A 100%);padding:40px 20px;text-align:center;border-radius:0 0 30px 30px;}
+.logo-emoji{font-size:60px;animation:float 3s ease-in-out infinite;}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+.app-name{font-size:32px;font-weight:900;background:linear-gradient(135deg,var(--gold),var(--teal-light));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+
+/* Menu & Buttons */
+.menu-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:20px;}
+.menu-card{background:var(--bg2);border-radius:var(--radius);padding:20px;cursor:pointer;border:1.5px solid rgba(255,255,255,.06);transition:0.3s;text-align:center;}
+.menu-card:active{transform:scale(0.95);}
+.menu-card.gold{border-color:var(--gold);}
+.menu-card.teal{border-color:var(--teal);}
+.menu-card.purple{border-color:var(--purple);}
+.menu-card.sky{border-color:var(--sky);}
+
+/* Quiz Area */
+.quiz-card{background:var(--bg2);border-radius:var(--radius);padding:30px 20px;text-align:center;margin-bottom:20px;border:2px solid var(--bg3);}
+.word-display{font-size:36px;font-weight:900;margin:10px 0;color:var(--gold);}
+.quiz-options{display:grid;gap:10px;}
+.opt-btn{background:var(--bg3);padding:16px;border-radius:var(--radius-sm);border:1.5px solid rgba(255,255,255,.1);color:white;font-weight:700;cursor:pointer;transition:0.2s;font-family:inherit;}
+.opt-btn.correct{background:var(--green);border-color:var(--green-light);animation:pop 0.4s;}
+.opt-btn.wrong{background:var(--red);border-color:var(--pink);animation:shake 0.4s;}
+
+@keyframes pop{0%{transform:scale(1)}50%{transform:scale(1.05)}100%{transform:scale(1)}}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-10px)}75%{transform:translateX(10px)}}
+
+/* Toast */
+#toast{position:fixed;bottom:120px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.8);padding:10px 20px;border-radius:50px;font-weight:700;display:none;z-index:1000;}
+
+/* Nav */
+.bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:var(--bg);border-top:1px solid var(--bg3);display:flex;padding:15px 0;}
+.nav-item{flex:1;text-align:center;cursor:pointer;font-size:12px;font-weight:700;color:var(--text2);}
+.nav-item.active{color:var(--gold);}
+</style>
+</head>
+<body>
+
+<div class="bg-stars" id="stars"></div>
+<div id="toast"></div>
+
+<div id="app">
+  <div class="screen active" id="home">
+    <div class="home-header">
+      <span class="logo-emoji">🎓</span>
+      <h1 class="app-name">TriLing v2</h1>
+      <p style="color:var(--text2); font-size:14px;">Master Academic English in 3 Languages</p>
+    </div>
+    
+    <div class="menu-grid">
+      <div class="menu-card gold" onclick="startSession('IELTS')">
+        <span style="font-size:30px;">🇬🇧</span>
+        <h3>IELTS</h3>
+        <p style="font-size:10px; color:var(--text2);">Target Band 7.5+</p>
+      </div>
+      <div class="menu-card teal" onclick="startSession('TOEIC')">
+        <span style="font-size:30px;">💼</span>
+        <h3>TOEIC</h3>
+        <p style="font-size:10px; color:var(--text2);">Global Business</p>
+      </div>
+      <div class="menu-card purple" onclick="startSession('TOEFL')">
+        <span style="font-size:30px;">🇺🇸</span>
+        <h3>TOEFL</h3>
+        <p style="font-size:10px; color:var(--text2);">ITP / Academic</p>
+      </div>
+      <div class="menu-card sky" onclick="startSession('CEFR')">
+        <span style="font-size:30px;">🇪🇺</span>
+        <h3>CEFR</h3>
+        <p style="font-size:10px; color:var(--text2);">Level B2-C1</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="screen" id="quiz">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+      <button onclick="goHome()" style="background:none; border:none; color:var(--text2); cursor:pointer;">← Back</button>
+      <div id="score-display" style="font-weight:900; color:var(--gold);">XP: 0</div>
+    </div>
+    
+    <div class="quiz-card">
+      <p id="cat-label" style="font-size:12px; color:var(--teal); font-weight:800;"></p>
+      <div id="q-emoji" style="font-size:50px; margin:10px 0;">❓</div>
+      <div class="word-display" id="q-word">Ready?</div>
+      <p style="font-size:14px; color:var(--text2);">เลือกความหมายที่ถูกต้อง</p>
+    </div>
+
+    <div class="quiz-options" id="options">
+      </div>
+  </div>
+</div>
+
+<nav class="bottom-nav">
+  <div class="nav-item active" onclick="goHome()">🏠<br>Home</div>
+  <div class="nav-item">📚<br>Vocab</div>
+  <div class="nav-item">📊<br>Stats</div>
+</nav>
+
+<script>
+// --- DATABASE (ตัวอย่างโครงสร้างคำศัพท์สำหรับขยายต่อให้ครบ 800 คำ) ---
+const database = {
+  "IELTS": [
+    {eng: "Substantial", thai: "มากมาย", rumi: "Besar", jawi: "بسر", emoji: "📈"},
+    {eng: "Advocate", thai: "สนับสนุน", rumi: "Sokong", jawi: "سوکوڠ", emoji: "⚖️"},
+    {eng: "Mitigate", thai: "บรรเทา", rumi: "Kurangkan", jawi: "کورڠكن", emoji: "🛡️"},
+    {eng: "Ambiguous", thai: "กำกวม", rumi: "Samar", jawi: "سامر", emoji: "❓"}
+  ],
+  "TOEIC": [
+    {eng: "Negotiate", thai: "ต่อรอง", rumi: "Bincang", jawi: "بينچڠ", emoji: "🤝"},
+    {eng: "Remuneration", thai: "ค่าตอบแทน", rumi: "Gaji", jawi: "ݢاجي", emoji: "💰"},
+    {eng: "Compliance", thai: "การปฏิบัติตาม", rumi: "Patuh", jawi: "ڤاتوه", emoji: "📋"}
+  ],
+  "TOEFL": [
+    {eng: "Hypothesis", thai: "สมมติฐาน", rumi: "Andaian", jawi: "انداين", emoji: "🧪"},
+    {eng: "Empirical", thai: "เชิงประจักษ์", rumi: "Nyata", jawi: "ڽاتا", emoji: "🔍"}
+  ],
+  "CEFR": [
+    {eng: "Proficient", thai: "ชำนาญ", rumi: "Mahir", jawi: "ماهير", emoji: "🏆"},
+    {eng: "Spontaneous", thai: "โดยธรรมชาติ", rumi: "Spontan", jawi: "سڤونتن", emoji: "⚡"}
+  ]
+};
+
+let currentPool = [];
+let currentAns = null;
+let score = 0;
+
+// สุ่มลำดับ Array
+function shuffle(arr) {
+  return arr.sort(() => Math.random() - 0.5);
+}
+
+function startSession(cat) {
+  currentPool = database[cat];
+  document.getElementById('cat-label').innerText = "CATEGORY: " + cat;
+  showScreen('quiz');
+  nextQuestion();
+}
+
+function nextQuestion() {
+  const optionsDiv = document.getElementById('options');
+  optionsDiv.innerHTML = '';
+  
+  // สุ่มคำศัพท์หนึ่งคำมาเป็นคำถาม
+  currentAns = currentPool[Math.floor(Math.random() * currentPool.length)];
+  
+  document.getElementById('q-word').innerText = currentAns.eng;
+  document.getElementById('q-emoji').innerText = currentAns.emoji;
+
+  // สร้างตัวเลือก (สุ่มจากคำอื่นๆ ในฐานข้อมูล)
+  let allWords = [];
+  Object.values(database).forEach(list => allWords = [...allWords, ...list]);
+  
+  let choices = [currentAns];
+  while(choices.length < 4) {
+    let rand = allWords[Math.floor(Math.random() * allWords.length)];
+    if(!choices.find(c => c.eng === rand.eng)) choices.push(rand);
+  }
+  
+  shuffle(choices).forEach(choice => {
+    const btn = document.createElement('button');
+    btn.className = 'opt-btn';
+    // แสดงผล 3 ภาษาในปุ่มเดียวเพื่อการ Scaffolding
+    btn.innerHTML = `${choice.thai} <br> <small style="opacity:0.6">${choice.rumi} | ${choice.jawi}</small>`;
+    btn.onclick = () => checkAns(choice, btn);
+    optionsDiv.appendChild(btn);
+  });
+}
+
+function checkAns(choice, btn) {
+  if(choice.eng === currentAns.eng) {
+    btn.classList.add('correct');
+    score += 10;
+    updateScore();
+    showToast("Correct! 🎉");
+    setTimeout(nextQuestion, 1000);
+  } else {
+    btn.classList.add('wrong');
+    showToast("Try again! ✍️");
+  }
+}
+
+function updateScore() {
+  document.getElementById('score-display').innerText = `XP: ${score}`;
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function goHome() {
+  showScreen('home');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.innerText = msg;
+  t.style.display = 'block';
+  setTimeout(() => t.style.display = 'none', 1500);
+}
+
+// Background Stars init
+const starsWrap = document.getElementById('stars');
+for(let i=0; i<40; i++){
+  const s = document.createElement('div');
+  s.className = 'star';
+  s.style.width = s.style.height = Math.random()*3+'px';
+  s.style.left = Math.random()*100+'%';
+  s.style.top = Math.random()*100+'%';
+  s.style.setProperty('--d', (Math.random()*3 + 2)+'s');
+  starsWrap.appendChild(s);
+}
+</script>
+
+</body>
+</html>
